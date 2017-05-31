@@ -27,6 +27,7 @@ typedef enum DeviceCategory {
     DEVICE_CATEGORY_SOUND,
     DEVICE_CATEGORY_MISC,
     DEVICE_CATEGORY_CPU,
+    DEVICE_CATEGORY_TIMER,
     DEVICE_CATEGORY_MAX
 } DeviceCategory;
 

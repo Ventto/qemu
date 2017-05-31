@@ -21,6 +21,7 @@
 #include "hw/misc/bcm2835_property.h"
 #include "hw/misc/bcm2835_rng.h"
 #include "hw/misc/bcm2835_mbox.h"
+#include "hw/timer/bcm2835_timer.h"
 #include "hw/sd/sdhci.h"
 #include "hw/sd/bcm2835_sdhost.h"
 #include "hw/gpio/bcm2835_gpio.h"
@@ -46,6 +47,7 @@ typedef struct BCM2835PeripheralState {
     BCM2835PropertyState property;
     BCM2835RngState rng;
     BCM2835MboxState mboxes;
+    BCM2835TimerState timer;
     SDHCIState sdhci;
     BCM2835SDHostState sdhost;
     BCM2835GpioState gpio;
