@@ -58,13 +58,6 @@ static void bcm2835_timer_write(void *opaque, hwaddr offset,
     switch (offset) {
     case 0x00:
         s->ctrl = value;
-        break;
-    case 0x04:
-        s->cnt_lo = value;
-        break;
-    case 0x08:
-        s->cnt_hi = value;
-        break;
     case 0x0c:
         s->cmp0 = value;
         break;
@@ -78,6 +71,11 @@ static void bcm2835_timer_write(void *opaque, hwaddr offset,
         s->cmp3 = value;
         break;
 
+    case 0x04:
+    case 0x08:
+        qemu_log_mask(LOG_GUEST_ERROR,
+                      "bcm2835_timer_write: Read-only offset %x\n",
+                      (int)offset);
     default:
         qemu_log_mask(LOG_GUEST_ERROR,
                       "bcm2835_timer_write: Bad offset %x\n",
