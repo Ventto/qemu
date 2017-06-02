@@ -18,6 +18,7 @@
 
 typedef struct {
     SysBusDevice busdev;
+    QEMUTimer *timers[2];
     MemoryRegion iomem;
 
     uint32_t ctrl;

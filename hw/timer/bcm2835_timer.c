@@ -10,15 +10,31 @@
 #include "qemu/osdep.h"
 #include "qemu/log.h"
 #include "qapi/error.h"
+#include "qemu/timer.h"
 #include "hw/timer/bcm2835_timer.h"
 
-#define TIMER_M0   (1 << 0)
 #define TIMER_M1   (1 << 1)
-#define TIMER_M2   (1 << 2)
 #define TIMER_M3   (1 << 3)
 
+static void bcm2835_timer_tick(void *opaque, int match)
+{
+    BCM2835TimerState *s = (BCM2835TimerState *)opaque;
+    s->ctrl |= match;
+    qemu_log_mask(LOG_GUEST_ERROR, "bcm2835_timer_tick: From %d\n", match);
+}
+
+static void bcm2835_timer_1(void *opaque)
+{
+    bcm2835_timer_tick(opaque, TIMER_M1);
+}
+
+static void bcm2835_timer_3(void *opaque)
+{
+    bcm2835_timer_tick(opaque, TIMER_M3);
+}
+
 static uint64_t bcm2835_timer_read(void *opaque, hwaddr offset,
-                                 unsigned size)
+                                   unsigned size)
 {
     BCM2835TimerState *s = (BCM2835TimerState *)opaque;
 
@@ -28,8 +44,11 @@ static uint64_t bcm2835_timer_read(void *opaque, hwaddr offset,
     case 0x00:
         return s->ctrl;
     case 0x04:
+        s->cnt_lo = (uint64_t)qemu_clock_get_us(QEMU_CLOCK_VIRTUAL)
+                                & 0xffffffff;
         return s->cnt_lo;
     case 0x08:
+        s->cnt_hi = (uint32_t)(qemu_clock_get_us(QEMU_CLOCK_VIRTUAL) >> 32);
         return s->cnt_hi;
     case 0x0c:
         return s->cmp0;
@@ -49,7 +68,7 @@ static uint64_t bcm2835_timer_read(void *opaque, hwaddr offset,
 }
 
 static void bcm2835_timer_write(void *opaque, hwaddr offset,
-                              uint64_t value, unsigned size)
+                                uint64_t value, unsigned size)
 {
     BCM2835TimerState *s = (BCM2835TimerState *)opaque;
 
@@ -58,17 +77,22 @@ static void bcm2835_timer_write(void *opaque, hwaddr offset,
     switch (offset) {
     case 0x00:
         s->ctrl = value;
+        break;
     case 0x0c:
         s->cmp0 = value;
         break;
     case 0x10:
+        timer_mod(s->timers[0], value);
         s->cmp1 = value;
+        s->ctrl &= ~TIMER_M1;
         break;
     case 0x14:
         s->cmp2 = value;
         break;
     case 0x18:
+        timer_mod(s->timers[1], value);
         s->cmp3 = value;
+        s->ctrl &= ~TIMER_M3;
         break;
 
     case 0x04:
@@ -76,6 +100,7 @@ static void bcm2835_timer_write(void *opaque, hwaddr offset,
         qemu_log_mask(LOG_GUEST_ERROR,
                       "bcm2835_timer_write: Read-only offset %x\n",
                       (int)offset);
+        break;
     default:
         qemu_log_mask(LOG_GUEST_ERROR,
                       "bcm2835_timer_write: Bad offset %x\n",
@@ -108,6 +133,12 @@ static const VMStateDescription vmstate_bcm2835_timer = {
 static void bcm2835_timer_init(Object *obj)
 {
     BCM2835TimerState *s = BCM2835_TIMER(obj);
+
+    s->ctrl = 0;
+    s->cmp0 = s->cmp1 = s->cmp2 = s->cmp3 = 0;
+
+    s->timers[0] = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_timer_1, s);
+    s->timers[1] = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_timer_3, s);
 
     memory_region_init_io(&s->iomem, obj, &bcm2835_timer_ops, s,
                           TYPE_BCM2835_TIMER, 0x20);
