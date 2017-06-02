@@ -11,6 +11,7 @@
 #include "qemu/log.h"
 #include "qapi/error.h"
 #include "qemu/timer.h"
+#include "trace.h"
 #include "hw/timer/bcm2835_timer.h"
 
 #define TIMER_M1   (1 << 1)
@@ -20,7 +21,7 @@ static void bcm2835_timer_tick(void *opaque, int match)
 {
     BCM2835TimerState *s = (BCM2835TimerState *)opaque;
     s->ctrl |= match;
-    qemu_log_mask(LOG_GUEST_ERROR, "bcm2835_timer_tick: From %d\n", match);
+    trace_bcm2835_timer_tick(match);
 }
 
 static void bcm2835_timer_1(void *opaque)
@@ -85,6 +86,7 @@ static void bcm2835_timer_write(void *opaque, hwaddr offset,
         timer_mod(s->timers[0], value);
         s->cmp1 = value;
         s->ctrl &= ~TIMER_M1;
+        trace_bcm2835_timer_ctrl(s->ctrl);
         break;
     case 0x14:
         s->cmp2 = value;
@@ -93,6 +95,7 @@ static void bcm2835_timer_write(void *opaque, hwaddr offset,
         timer_mod(s->timers[1], value);
         s->cmp3 = value;
         s->ctrl &= ~TIMER_M3;
+        trace_bcm2835_timer_ctrl(s->ctrl);
         break;
 
     case 0x04:
