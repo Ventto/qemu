@@ -39,8 +39,6 @@ static uint64_t bcm2835_timer_read(void *opaque, hwaddr offset,
 {
     BCM2835TimerState *s = (BCM2835TimerState *)opaque;
 
-    assert(size == 4);
-
     switch (offset) {
     case 0x00:
         return s->ctrl;
@@ -72,8 +70,6 @@ static void bcm2835_timer_write(void *opaque, hwaddr offset,
                                 uint64_t value, unsigned size)
 {
     BCM2835TimerState *s = (BCM2835TimerState *)opaque;
-
-    assert(size == 4);
 
     switch (offset) {
     case 0x00:
@@ -115,6 +111,8 @@ static const MemoryRegionOps bcm2835_timer_ops = {
     .read = bcm2835_timer_read,
     .write = bcm2835_timer_write,
     .endianness = DEVICE_NATIVE_ENDIAN,
+    .valid.min_access_size = 4,
+    .valid.max_access_size = 4,
 };
 
 static const VMStateDescription vmstate_bcm2835_timer = {
