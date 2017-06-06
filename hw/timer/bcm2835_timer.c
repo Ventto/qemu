@@ -43,12 +43,9 @@ static uint64_t bcm2835_timer_read(void *opaque, hwaddr offset,
     case 0x00:
         return s->ctrl;
     case 0x04:
-        s->cnt_lo = (uint64_t)qemu_clock_get_us(QEMU_CLOCK_VIRTUAL)
-                                & 0xffffffff;
-        return s->cnt_lo;
+        return (uint64_t)qemu_clock_get_us(QEMU_CLOCK_VIRTUAL) & 0xffffffff;
     case 0x08:
-        s->cnt_hi = (uint32_t)(qemu_clock_get_us(QEMU_CLOCK_VIRTUAL) >> 32);
-        return s->cnt_hi;
+        return (uint64_t)qemu_clock_get_us(QEMU_CLOCK_VIRTUAL) >> 32;
     case 0x0c:
         return s->cmp0;
     case 0x10:
