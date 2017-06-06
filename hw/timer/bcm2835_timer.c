@@ -17,21 +17,13 @@
 #define TIMER_M1   (1 << 1)
 #define TIMER_M3   (1 << 3)
 
-static void bcm2835_timer_tick(void *opaque, int match)
+static void bcm2835_timer_tick(void *opaque)
 {
     BCM2835TimerState *s = (BCM2835TimerState *)opaque;
-    s->ctrl |= match;
-    trace_bcm2835_timer_tick(match);
-}
 
-static void bcm2835_timer_1(void *opaque)
-{
-    bcm2835_timer_tick(opaque, TIMER_M1);
-}
-
-static void bcm2835_timer_3(void *opaque)
-{
-    bcm2835_timer_tick(opaque, TIMER_M3);
+    s->ctrl |= TIMER_M3;
+    trace_bcm2835_timer_tick(TIMER_M3);
+    qemu_irq_raise(s->irq);
 }
 
 static uint64_t bcm2835_timer_read(void *opaque, hwaddr offset,
@@ -76,19 +68,15 @@ static void bcm2835_timer_write(void *opaque, hwaddr offset,
         s->cmp0 = value;
         break;
     case 0x10:
-        timer_mod(s->timers[0], value);
         s->cmp1 = value;
-        s->ctrl &= ~TIMER_M1;
-        trace_bcm2835_timer_ctrl(s->ctrl);
         break;
     case 0x14:
         s->cmp2 = value;
         break;
     case 0x18:
-        timer_mod(s->timers[1], value);
+        timer_mod(s->timer, value);
         s->cmp3 = value;
         s->ctrl &= ~TIMER_M3;
-        trace_bcm2835_timer_ctrl(s->ctrl);
         break;
 
     case 0x04:
@@ -135,12 +123,13 @@ static void bcm2835_timer_init(Object *obj)
     s->ctrl = 0;
     s->cmp0 = s->cmp1 = s->cmp2 = s->cmp3 = 0;
 
-    s->timers[0] = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_timer_1, s);
-    s->timers[1] = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_timer_3, s);
+    s->timer = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_timer_tick, s);
 
     memory_region_init_io(&s->iomem, obj, &bcm2835_timer_ops, s,
                           TYPE_BCM2835_TIMER, 0x20);
     sysbus_init_mmio(SYS_BUS_DEVICE(s), &s->iomem);
+
+    sysbus_init_irq(SYS_BUS_DEVICE(obj), &s->irq);
 }
 
 static void bcm2835_timer_class_init(ObjectClass *klass, void *data)
