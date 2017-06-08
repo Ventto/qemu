@@ -22,8 +22,13 @@ static void bcm2835_timer_tick(void *opaque)
     BCM2835TimerState *s = (BCM2835TimerState *)opaque;
 
     s->ctrl |= TIMER_M3;
-    trace_bcm2835_timer_tick(TIMER_M3);
     qemu_irq_raise(s->irq);
+
+    uint64_t now = qemu_clock_get_us(QEMU_CLOCK_VIRTUAL);
+    s->cnt_lo = now & 0xffffffff;
+    s->cnt_hi = now >> 32;
+
+    trace_bcm2835_timer_tick(TIMER_M3);
 }
 
 static uint64_t bcm2835_timer_read(void *opaque, hwaddr offset,
