@@ -7,17 +7,17 @@
  * See the COPYING file in the top-level directory.
  */
 
-#ifndef BCM2835_TIMER_H
-#define BCM2835_TIMER_H
+#ifndef BCM2835_SYSTIMER_H
+#define BCM2835_SYSTIMER_H
 
 #include "hw/sysbus.h"
 
-#define TYPE_BCM2835_TIMER "bcm2835-timer"
-#define BCM2835_TIMER(obj) \
-        OBJECT_CHECK(BCM2835TimerState, (obj), TYPE_BCM2835_TIMER)
+#define TYPE_BCM2835_SYSTIMER "bcm2835-systimer"
+#define BCM2835_SYSTIMER(obj) \
+        OBJECT_CHECK(BCM2835SysTimerState, (obj), TYPE_BCM2835_SYSTIMER)
 
 typedef struct {
-    SysBusDevice busdev;
+    SysBusDevice bus;
     MemoryRegion iomem;
 
     QEMUTimer *timer;
@@ -30,6 +30,6 @@ typedef struct {
     uint32_t cmp1;
     uint32_t cmp2;
     uint32_t cmp3;
-} BCM2835TimerState;
+} BCM2835SysTimerState;
 
 #endif

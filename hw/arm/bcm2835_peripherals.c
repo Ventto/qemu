@@ -91,9 +91,9 @@ static void bcm2835_peripherals_init(Object *obj)
     qdev_set_parent_bus(DEVICE(&s->rng), sysbus_get_default());
 
     /* System Timer */
-    object_initialize(&s->timer, sizeof(s->timer), TYPE_BCM2835_TIMER);
-    object_property_add_child(obj, "timer", OBJECT(&s->timer), NULL);
-    qdev_set_parent_bus(DEVICE(&s->timer), sysbus_get_default());
+    object_initialize(&s->systimer, sizeof(s->systimer), TYPE_BCM2835_SYSTIMER);
+    object_property_add_child(obj, "systimer", OBJECT(&s->systimer), NULL);
+    qdev_set_parent_bus(DEVICE(&s->systimer), sysbus_get_default());
 
     /* Extended Mass Media Controller */
     object_initialize(&s->sdhci, sizeof(s->sdhci), TYPE_SYSBUS_SDHCI);
@@ -260,7 +260,7 @@ static void bcm2835_peripherals_realize(DeviceState *dev, Error **errp)
                 sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->rng), 0));
 
     /* System Timer */
-    object_property_set_bool(OBJECT(&s->timer), true, "realized", &err);
+    object_property_set_bool(OBJECT(&s->systimer), true, "realized", &err);
     if (err) {
         error_propagate(errp, err);
         return;
@@ -268,8 +268,8 @@ static void bcm2835_peripherals_realize(DeviceState *dev, Error **errp)
 
 
     memory_region_add_subregion(&s->peri_mr, ST_OFFSET,
-                sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->timer), 0));
-    sysbus_connect_irq(SYS_BUS_DEVICE(&s->timer), 0,
+                sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->systimer), 0));
+    sysbus_connect_irq(SYS_BUS_DEVICE(&s->systimer), 0,
             qdev_get_gpio_in_named(DEVICE(&s->ic), BCM2835_IC_GPU_IRQ,
                 INTERRUPT_TIMER3));
 
