@@ -271,6 +271,9 @@ static void bcm2835_peripherals_realize(DeviceState *dev, Error **errp)
                 sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->systimer), 0));
     sysbus_connect_irq(SYS_BUS_DEVICE(&s->systimer), 0,
             qdev_get_gpio_in_named(DEVICE(&s->ic), BCM2835_IC_GPU_IRQ,
+                INTERRUPT_TIMER1));
+    sysbus_connect_irq(SYS_BUS_DEVICE(&s->systimer), 1,
+            qdev_get_gpio_in_named(DEVICE(&s->ic), BCM2835_IC_GPU_IRQ,
                 INTERRUPT_TIMER3));
 
     /* Extended Mass Media Controller */

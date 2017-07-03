@@ -14,21 +14,34 @@
 #include "trace.h"
 #include "hw/timer/bcm2835_systimer.h"
 
-#define SYSTIMER_M1   (1 << 1)
-#define SYSTIMER_M3   (1 << 3)
+#define TIMER_M0        (1 << 0)
+#define TIMER_M1        (1 << 1)
+#define TIMER_M2        (1 << 2)
+#define TIMER_M3        (1 << 3)
+#define TIMER_MATCH(n)  (1 << n)
 
-static void bcm2835_systimer_tick(void *opaque)
+static void bcm2835_systimer_update(void *opaque, unsigned timer)
 {
     BCM2835SysTimerState *s = (BCM2835SysTimerState *)opaque;
 
-    s->ctrl |= SYSTIMER_M3;
-    qemu_irq_raise(s->irq);
+    s->ctrl |= TIMER_MATCH(timer);
+    qemu_irq_raise((timer == 1) ? s->irq[0] : s->irq[1]);
 
     uint64_t now = qemu_clock_get_us(QEMU_CLOCK_VIRTUAL);
     s->cnt_lo = now & 0xffffffff;
     s->cnt_hi = now >> 32;
 
-    trace_bcm2835_systimer_tick(SYSTIMER_M3);
+    trace_bcm2835_systimer_update(timer);
+}
+
+static void bcm2835_systimer_tick1(void *opaque)
+{
+    bcm2835_systimer_update(opaque, 1);
+}
+
+static void bcm2835_systimer_tick3(void *opaque)
+{
+    bcm2835_systimer_update(opaque, 3);
 }
 
 static uint64_t bcm2835_systimer_read(void *opaque, hwaddr offset,
@@ -73,15 +86,15 @@ static void bcm2835_systimer_write(void *opaque, hwaddr offset,
         s->cmp0 = value;
         break;
     case 0x10:
+        timer_mod(s->timers[0], value);
         s->cmp1 = value;
         break;
     case 0x14:
         s->cmp2 = value;
         break;
     case 0x18:
-        timer_mod(s->timer, value);
+        timer_mod(s->timers[1], value);
         s->cmp3 = value;
-        s->ctrl &= ~SYSTIMER_M3;
         break;
 
     case 0x04:
@@ -128,13 +141,15 @@ static void bcm2835_systimer_init(Object *obj)
     s->ctrl = 0;
     s->cmp0 = s->cmp1 = s->cmp2 = s->cmp3 = 0;
 
-    s->timer = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_systimer_tick, s);
+    s->timers[0] = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_systimer_tick1, s);
+    s->timers[1] = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_systimer_tick3, s);
 
     memory_region_init_io(&s->iomem, obj, &bcm2835_systimer_ops, s,
                           TYPE_BCM2835_SYSTIMER, 0x20);
     sysbus_init_mmio(SYS_BUS_DEVICE(s), &s->iomem);
 
-    sysbus_init_irq(SYS_BUS_DEVICE(obj), &s->irq);
+    sysbus_init_irq(SYS_BUS_DEVICE(obj), &s->irq[0]);
+    sysbus_init_irq(SYS_BUS_DEVICE(obj), &s->irq[1]);
 }
 
 static void bcm2835_systimer_class_init(ObjectClass *klass, void *data)

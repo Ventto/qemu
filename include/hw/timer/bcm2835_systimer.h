@@ -16,12 +16,14 @@
 #define BCM2835_SYSTIMER(obj) \
         OBJECT_CHECK(BCM2835SysTimerState, (obj), TYPE_BCM2835_SYSTIMER)
 
+#define AVAILABLE_TIMERS    2
+
 typedef struct {
     SysBusDevice bus;
     MemoryRegion iomem;
 
-    QEMUTimer *timer;
-    qemu_irq irq;
+    QEMUTimer *timers[AVAILABLE_TIMERS];
+    qemu_irq irq[AVAILABLE_TIMERS];
 
     uint32_t ctrl;
     uint32_t cnt_lo;
