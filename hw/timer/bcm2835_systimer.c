@@ -80,7 +80,12 @@ static void bcm2835_systimer_write(void *opaque, hwaddr offset,
 
     switch (offset) {
     case 0x00:
-        s->ctrl = value;
+        value &= 0x0000000FUL;
+        if ((s->ctrl & TIMER_M1) && (value & TIMER_M1))
+            qemu_irq_lower(s->irq[0]);
+        if ((s->ctrl & TIMER_M3) && (value & TIMER_M3))
+            qemu_irq_lower(s->irq[1]);
+        s->ctrl &= ~value;
         break;
     case 0x0c:
         s->cmp0 = value;
