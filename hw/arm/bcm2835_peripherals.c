@@ -90,6 +90,11 @@ static void bcm2835_peripherals_init(Object *obj)
     object_property_add_child(obj, "rng", OBJECT(&s->rng), NULL);
     qdev_set_parent_bus(DEVICE(&s->rng), sysbus_get_default());
 
+    /* ARM Timer */
+    object_initialize(&s->armtimer, sizeof(s->armtimer), TYPE_BCM2835_ARMTIMER);
+    object_property_add_child(obj, "armtimer", OBJECT(&s->armtimer), NULL);
+    qdev_set_parent_bus(DEVICE(&s->armtimer), sysbus_get_default());
+
     /* Extended Mass Media Controller */
     object_initialize(&s->sdhci, sizeof(s->sdhci), TYPE_SYSBUS_SDHCI);
     object_property_add_child(obj, "sdhci", OBJECT(&s->sdhci), NULL);
@@ -164,6 +169,20 @@ static void bcm2835_peripherals_realize(DeviceState *dev, Error **errp)
     memory_region_add_subregion(&s->peri_mr, ARMCTRL_IC_OFFSET,
                 sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->ic), 0));
     sysbus_pass_irq(SYS_BUS_DEVICE(s), SYS_BUS_DEVICE(&s->ic));
+
+
+    /* ARM Timer */
+    object_property_set_bool(OBJECT(&s->armtimer), true, "realized", &err);
+    if (err) {
+        error_propagate(errp, err);
+        return;
+    }
+
+    memory_region_add_subregion(&s->peri_mr, ARMCTRL_TIMER0_1_OFFSET,
+                sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->armtimer), 0));
+    sysbus_connect_irq(SYS_BUS_DEVICE(&s->armtimer), 0,
+        qdev_get_gpio_in_named(DEVICE(&s->ic), BCM2835_IC_GPU_IRQ,
+                               INTERRUPT_ARM));
 
     /* UART0 */
     qdev_prop_set_chr(DEVICE(s->uart0), "chardev", serial_hds[0]);
