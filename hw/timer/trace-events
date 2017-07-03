@@ -61,5 +61,5 @@ cmsdk_apb_timer_read(uint64_t offset, uint64_t data, unsigned size) "CMSDK APB t
 cmsdk_apb_timer_write(uint64_t offset, uint64_t data, unsigned size) "CMSDK APB timer write: offset 0x%" PRIx64 " data 0x%" PRIx64 " size %u"
 cmsdk_apb_timer_reset(void) "CMSDK APB timer: reset"
 
-# hw/timer/bcm2535_timer.c
+# hw/timer/bcm2535_systimer.c
 bcm2835_systimer_update(unsigned timer) "tick: timer %u"
