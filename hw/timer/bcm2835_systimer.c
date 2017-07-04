@@ -89,13 +89,15 @@ static void bcm2835_systimer_write(void *opaque, hwaddr offset,
     BCM2835SysTimerState *s = (BCM2835SysTimerState *)opaque;
 
     switch (offset) {
-    case 0x00:
-        value &= 0x0000000FUL;
-        if ((s->ctrl & TIMER_M1) && (value & TIMER_M1))
+    case ST_CONTROL_STATUS:
+        if ((s->ctrl & TIMER_M1) && (value & TIMER_M1)) {
             qemu_irq_lower(s->irq[0]);
-        if ((s->ctrl & TIMER_M3) && (value & TIMER_M3))
+            s->ctrl &= ~TIMER_M1;
+        }
+        if ((s->ctrl & TIMER_M3) && (value & TIMER_M3)) {
             qemu_irq_lower(s->irq[1]);
-        s->ctrl &= ~value;
+            s->ctrl &= ~TIMER_M3;
+        }
         break;
     case ST_COMPARE0:
         s->cmp0 = value;
