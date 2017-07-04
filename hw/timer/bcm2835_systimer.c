@@ -37,10 +37,6 @@ static void bcm2835_systimer_interrupt(void *opaque, unsigned timer)
     s->ctrl |= TIMER_MATCH(timer);
     qemu_irq_raise((timer == 1) ? s->irq[0] : s->irq[1]);
 
-    uint64_t now = qemu_clock_get_us(QEMU_CLOCK_VIRTUAL);
-    s->cnt_lo = now & 0xffffffff;
-    s->cnt_hi = now >> 32;
-
     trace_bcm2835_systimer_interrupt(timer);
 }
 
@@ -141,8 +137,6 @@ static const VMStateDescription vmstate_bcm2835_systimer = {
     .minimum_version_id = 1,
     .fields = (VMStateField[]) {
         VMSTATE_UINT32(ctrl, BCM2835SysTimerState),
-        VMSTATE_UINT32(cnt_lo, BCM2835SysTimerState),
-        VMSTATE_UINT32(cnt_hi, BCM2835SysTimerState),
         VMSTATE_UINT32(cmp0, BCM2835SysTimerState),
         VMSTATE_UINT32(cmp1, BCM2835SysTimerState),
         VMSTATE_UINT32(cmp2, BCM2835SysTimerState),

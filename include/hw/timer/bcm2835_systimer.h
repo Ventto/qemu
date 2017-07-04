@@ -26,8 +26,6 @@ typedef struct {
     qemu_irq irq[AVAILABLE_TIMERS];
 
     uint32_t ctrl;
-    uint32_t cnt_lo;
-    uint32_t cnt_hi;
     uint32_t cmp0;
     uint32_t cmp1;
     uint32_t cmp2;
