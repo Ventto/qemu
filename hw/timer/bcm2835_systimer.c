@@ -14,6 +14,16 @@
 #include "trace.h"
 #include "hw/timer/bcm2835_systimer.h"
 
+#define ST_SIZE             0x20
+
+#define ST_CONTROL_STATUS   0x00
+#define ST_COUNTER_LO       0x04
+#define ST_COUNTER_HI       0x08
+#define ST_COMPARE0         0x0C
+#define ST_COMPARE1         0x10
+#define ST_COMPARE2         0x14
+#define ST_COMPARE3         0x18
+
 #define TIMER_M0        (1 << 0)
 #define TIMER_M1        (1 << 1)
 #define TIMER_M2        (1 << 2)
@@ -50,19 +60,19 @@ static uint64_t bcm2835_systimer_read(void *opaque, hwaddr offset,
     BCM2835SysTimerState *s = (BCM2835SysTimerState *)opaque;
 
     switch (offset) {
-    case 0x00:
+    case ST_CONTROL_STATUS:
         return s->ctrl;
-    case 0x04:
+    case ST_COUNTER_LO:
         return (uint64_t)qemu_clock_get_us(QEMU_CLOCK_VIRTUAL) & 0xffffffff;
-    case 0x08:
+    case ST_COUNTER_HI:
         return (uint64_t)qemu_clock_get_us(QEMU_CLOCK_VIRTUAL) >> 32;
-    case 0x0c:
+    case ST_COMPARE0:
         return s->cmp0;
-    case 0x10:
+    case ST_COMPARE1:
         return s->cmp1;
-    case 0x14:
+    case ST_COMPARE2:
         return s->cmp2;
-    case 0x18:
+    case ST_COMPARE3:
         return s->cmp3;
 
     default:
@@ -87,23 +97,23 @@ static void bcm2835_systimer_write(void *opaque, hwaddr offset,
             qemu_irq_lower(s->irq[1]);
         s->ctrl &= ~value;
         break;
-    case 0x0c:
+    case ST_COMPARE0:
         s->cmp0 = value;
         break;
-    case 0x10:
+    case ST_COMPARE1:
         timer_mod(s->timers[0], value);
         s->cmp1 = value;
         break;
-    case 0x14:
+    case ST_COMPARE2:
         s->cmp2 = value;
         break;
-    case 0x18:
+    case ST_COMPARE3:
         timer_mod(s->timers[1], value);
         s->cmp3 = value;
         break;
 
-    case 0x04:
-    case 0x08:
+    case ST_COUNTER_LO:
+    case ST_COUNTER_HI:
         qemu_log_mask(LOG_GUEST_ERROR,
                       "bcm2835_systimer_write: Read-only offset %x\n",
                       (int)offset);
@@ -150,7 +160,7 @@ static void bcm2835_systimer_init(Object *obj)
     s->timers[1] = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_systimer_tick3, s);
 
     memory_region_init_io(&s->iomem, obj, &bcm2835_systimer_ops, s,
-                          TYPE_BCM2835_SYSTIMER, 0x20);
+                          TYPE_BCM2835_SYSTIMER, ST_SIZE);
     sysbus_init_mmio(SYS_BUS_DEVICE(s), &s->iomem);
 
     sysbus_init_irq(SYS_BUS_DEVICE(obj), &s->irq[0]);
