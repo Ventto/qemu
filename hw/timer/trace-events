@@ -62,4 +62,4 @@ cmsdk_apb_timer_write(uint64_t offset, uint64_t data, unsigned size) "CMSDK APB 
 cmsdk_apb_timer_reset(void) "CMSDK APB timer: reset"
 
 # hw/timer/bcm2535_systimer.c
-bcm2835_systimer_update(unsigned timer) "tick: timer %u"
+bcm2835_systimer_interrupt(unsigned timer) "timer %u"

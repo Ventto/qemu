@@ -30,7 +30,7 @@
 #define TIMER_M3        (1 << 3)
 #define TIMER_MATCH(n)  (1 << n)
 
-static void bcm2835_systimer_update(void *opaque, unsigned timer)
+static void bcm2835_systimer_interrupt(void *opaque, unsigned timer)
 {
     BCM2835SysTimerState *s = (BCM2835SysTimerState *)opaque;
 
@@ -41,17 +41,17 @@ static void bcm2835_systimer_update(void *opaque, unsigned timer)
     s->cnt_lo = now & 0xffffffff;
     s->cnt_hi = now >> 32;
 
-    trace_bcm2835_systimer_update(timer);
+    trace_bcm2835_systimer_interrupt(timer);
 }
 
-static void bcm2835_systimer_tick1(void *opaque)
+static void bcm2835_systimer1_cb(void *opaque)
 {
-    bcm2835_systimer_update(opaque, 1);
+    bcm2835_systimer_interrupt(opaque, 1);
 }
 
-static void bcm2835_systimer_tick3(void *opaque)
+static void bcm2835_systimer3_cb(void *opaque)
 {
-    bcm2835_systimer_update(opaque, 3);
+    bcm2835_systimer_interrupt(opaque, 3);
 }
 
 static uint64_t bcm2835_systimer_read(void *opaque, hwaddr offset,
@@ -158,8 +158,8 @@ static void bcm2835_systimer_init(Object *obj)
     s->ctrl = 0;
     s->cmp0 = s->cmp1 = s->cmp2 = s->cmp3 = 0;
 
-    s->timers[0] = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_systimer_tick1, s);
-    s->timers[1] = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_systimer_tick3, s);
+    s->timers[0] = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_systimer1_cb, s);
+    s->timers[1] = timer_new_us(QEMU_CLOCK_VIRTUAL, bcm2835_systimer3_cb, s);
 
     memory_region_init_io(&s->iomem, obj, &bcm2835_systimer_ops, s,
                           TYPE_BCM2835_SYSTIMER, ST_SIZE);
