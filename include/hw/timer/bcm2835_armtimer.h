@@ -10,6 +10,7 @@
 #ifndef BCM2835_ARMTIMER_H
 #define BCM2835_ARMTIMER_H
 
+#include "hw/ptimer.h"
 #include "hw/sysbus.h"
 
 #define TYPE_BCM2835_ARMTIMER "bcm2835-armtimer"
@@ -20,7 +21,7 @@ typedef struct {
     SysBusDevice parent_obj;
     MemoryRegion iomem;
 
-    QEMUTimer *timer;
+    ptimer_state *timer;
     qemu_irq irq;
 
     uint32_t val;

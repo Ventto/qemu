@@ -16,6 +16,10 @@
 #include "qemu/main-loop.h"
 #include "qemu/log.h"
 
+#define ARM_TIMER_LOAD          0x00
+#define ARM_TIMER_VALUE         0x04
+#define ARM_TIMER_CTRL          0x08
+
 /* Common timer implementation.  */
 
 #define TIMER_CTRL_ONESHOT      (1 << 0)
