@@ -29,18 +29,19 @@
 #define ARM_TIMER_PREDIVIDER    0x1C
 #define ARM_TIMER_COUNTER       0x20
 
-/* Control register */
+/* Control register masks */
 #define CTRL_CNT_PRESCALE       (0xFF << 16)
 #define CTRL_CNT_ENABLE         (1 << 9)
-#define CTRL_TIMER_ENABLE       (1 << 8)
+#define CTRL_TIMER_ENABLE       (1 << 7)
 #define CTRL_INT_ENABLE         (1 << 5)
 #define CTRL_TIMER_PRESCALE     (3 << 2)
 #define CTRL_TIMER_SIZE_32BIT   (1 << 1)
 
+#define CTRL_TIMER_WRAP_MODE    0
+
 /* Register reset values */
 #define CTRL_CNT_PRESCALE_RESET     (0x3E << 16)
 #define ARM_TIMER_CTRL_RESET        (CTRL_CNT_PRESCALE_RESET | CTRL_INT_ENABLE)
-#define ARM_TIMER_VALUE_RESET       0xFFFF
 #define ARM_TIMER_IE_READ_VALUE     0x544D5241  /* ASCII "ARMT" */
 /*
    The system clock refers to a 250 MHz frequency by default.
@@ -66,10 +67,28 @@
    The predivider reset value is 0x3E (or 62), knowing APB clock frequency,
    the FRN clock refers to a 2MHz frequency by default.
 */
-#define ARM_APB_FREQ                 126UL /* MHz */
-#define ARM_TIMER_PREDIVIDER_RESET   125   /* MHz */
+#define ARM_APB_FREQ                126UL /* MHz */
+#define ARM_TIMER_PREDIVIDER_RESET  125   /* MHz */
 
-static const uint8_t ctrl_prescale [] = { 1, 16, 256, 1 };
+#define USECS_PER_SEC               1000000
+
+static const uint16_t ctrl_prescale [] = { 1, 16, 256, 1 };
+
+static void bcm2835_armtimer_recalibrate(BCM2835ARMTimerState *s, int reload)
+{
+    uint32_t limit;
+
+    /* ARM Dual-Timer Module SP804, section 3.2.1:
+       If the Load Register is set to 0 then an interrupt is generated
+       immediately. */
+    if (reload == 2) {
+        limit = s->reload;
+    } else {
+        limit = (s->ctrl & CTRL_TIMER_SIZE_32BIT) ? 0xFFFFFFFF : 0XFFFF;
+    }
+
+    ptimer_set_limit(s->timer, limit, reload);
+}
 
 static void bcm2835_armtimer_cb(void *opaque)
 {
@@ -78,6 +97,8 @@ static void bcm2835_armtimer_cb(void *opaque)
     s->raw_irq = 1;
     qemu_irq_raise(s->irq);
 
+    bcm2835_armtimer_recalibrate(s, 1);
+
     trace_bcm2835_armtimer_tick();
 }
 
@@ -85,6 +106,7 @@ static uint64_t bcm2835_armtimer_read(void *opaque, hwaddr offset,
                                    unsigned size)
 {
     BCM2835ARMTimerState *s = (BCM2835ARMTimerState *)opaque;
+    uint32_t period;
 
     switch (offset) {
     case ARM_TIMER_LOAD:
@@ -103,9 +125,9 @@ static uint64_t bcm2835_armtimer_read(void *opaque, hwaddr offset,
     case ARM_TIMER_PREDIVIDER:
         return s->prediv;
     case ARM_TIMER_COUNTER:
-        /* FIXME: Counter and its prescaler */
-        prescaler = (s->ctrl & CTRL_CNT_PRESCALE) >> 16;
-        return 0;
+        period = ARM_APB_FREQ / (((s->ctrl & CTRL_CNT_PRESCALE) >> 16) + 1);
+        period *= USECS_PER_SEC;
+        return qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) / period;
 
     default:
         qemu_log_mask(LOG_GUEST_ERROR,
@@ -119,12 +141,11 @@ static void bcm2835_armtimer_write(void *opaque, hwaddr offset,
                                 uint64_t value, unsigned size)
 {
     BCM2835ARMTimerState *s = (BCM2835ARMTimerState *)opaque;
-    uint32_t limit, div;
+    uint32_t div;
 
     switch (offset) {
     case ARM_TIMER_LOAD:
-        s->reload = value;
-        /* Recalibration & Reload */
+        bcm2835_armtimer_recalibrate(s, 2);
         break;
     case ARM_TIMER_CTRL:
         if (s->ctrl & CTRL_TIMER_ENABLE)
@@ -132,24 +153,35 @@ static void bcm2835_armtimer_write(void *opaque, hwaddr offset,
 
         s->ctrl = value;
 
-        limit = (s->ctrl & CTRL_TIMER_SIZE) ? 0xFFFF : 0XFFFFFFFF;
-        ptimer_set_limit(s->timer, limit, (s->ctrl & CTRL_TIMER_ENABLE));
-
-        div = ctrl_prescale[((s->ctrl & CTRL_TIMER_PRESCALE) >> 2)] + s->prediv;
-        ptimer_set_freq(s->timer, ARM_APB_FREQ / div);
+        bcm2835_armtimer_recalibrate(s, s->ctrl & CTRL_TIMER_ENABLE);
+        div = ctrl_prescale[((s->ctrl & CTRL_TIMER_PRESCALE) >> 2)]
+                    * (s->prediv + 1);
+        ptimer_set_freq(s->timer, (ARM_APB_FREQ / div) * USECS_PER_SEC);
 
         if (s->ctrl & CTRL_TIMER_ENABLE)
-            ptimer_run(s->timer, 0);
+            ptimer_run(s->timer, CTRL_TIMER_WRAP_MODE);
         break;
     case ARM_TIMER_INTCLR:
         qemu_irq_lower(s->irq);
         s->raw_irq = 0;
         break;
     case ARM_TIMER_RELOAD:
+        /* In Free-running mode the timer counter wraps around to 32 or 16-bit
+           limit (respectively 0xFFFFFFFF or 0xFFFFF) regardless the Reload
+           and Load Register values, except that when the Load Register is
+           written to directly, the current count immediately resets to the 32
+           or 16-bits limit according to the Control Register bit [1]. */
         s->reload = value;
         break;
     case ARM_TIMER_PREDIVIDER:
         s->prediv = value;
+        if (s->ctrl & CTRL_TIMER_ENABLE) {
+            ptimer_stop(s->timer);
+            div = ctrl_prescale[((s->ctrl & CTRL_TIMER_PRESCALE) >> 2)]
+                    * (s->prediv + 1);
+            ptimer_set_freq(s->timer, ARM_APB_FREQ / div);
+            ptimer_run(s->timer, CTRL_TIMER_WRAP_MODE);
+        }
         break;
 
     case ARM_TIMER_VALUE:
@@ -190,9 +222,20 @@ static void bcm2835_armtimer_init(Object *obj)
     BCM2835ARMTimerState *s = BCM2835_ARMTIMER(obj);
     QEMUBH *bh = qemu_bh_new(bcm2835_armtimer_cb, s);
 
-    s->ctrl = s->reload = 0;
-    s->raw_irq = s->msk_irq = 0;
+    s->reload = s->raw_irq = s->msk_irq = 0;
     s->prediv = ARM_TIMER_PREDIVIDER_RESET;
+
+    /* ARM Dual-Timer Module SP804, section 2.2.6:
+       Timer Control Register Initialization :
+           - the timer counter is disabled, Bit[7]=0
+           - 16-bit counter mode is selected, Bit[1]=0
+           - prescalers are set to divide by 1, Bit[2:3]=0x0
+           - interrupts are cleared but enabled, Bit[5]=1
+           - the Load Register is set to zero
+           - the counter Value is set to 0xFFFFFFFF (useless)
+      BCM2835 ARM Peripherals, section 14.2:
+           - free-running mode is always selected, Bit[6]=0 and Bit[0]=0
+             because periodic and one-shot modes are not supported. */
     s->ctrl = ARM_TIMER_CTRL_RESET;
 
     s->timer = ptimer_init(bh, PTIMER_POLICY_DEFAULT);
