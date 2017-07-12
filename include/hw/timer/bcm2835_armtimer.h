@@ -1,5 +1,5 @@
 /*
- * BCM2835 Armtem Timer
+ * BCM2835 ARM Timer
  *
  * Copyright (C) 2017 Thomas Venries <thomas.venries@gmail.com>
  *
@@ -24,7 +24,6 @@ typedef struct {
     ptimer_state *timer;
     qemu_irq irq;
 
-    uint32_t val;
     uint32_t ctrl;
     uint32_t raw_irq;
     uint32_t msk_irq;

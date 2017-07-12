@@ -1,5 +1,5 @@
 /*
- * BCM2835 Armtem Timer
+ * BCM2835 ARM Timer
  *
  * Copyright (C) 2017 Thomas Venries <thomas.venries@gmail.com>
  *
@@ -52,7 +52,7 @@
    which they do not have. Instead the predivider takes the APB clock
    and divides it down according to:
 
-       timer_clock = apb_clock / (pre_divider + 1)
+       timer_clock = apb_clock / (prediv + 1)
 
    The need is a 1MHz timer clock frequency and BCM2835 ARM Peripherals
    documentation mentions the predivider reset value is 0x7D (or 125), so
@@ -61,7 +61,7 @@
    Also the additional free-running counter runs from the APB clock and has
    its own clock predivider controlled by buts 16-23 of the timer control reg:
 
-        counter_clock = apb_clock / (pre_divider + 1)
+       frc_clock = apb_clock / (prediv + 1)
 
    The predivider reset value is 0x3E (or 62), knowing APB clock frequency,
    the FRN clock refers to a 2MHz frequency by default.
@@ -208,8 +208,9 @@ static void bcm2835_armtimer_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
 
-    //set_bit(DEVICE_CATEGORY_TIMER, dc->categories);
-    dc->desc = "BCM2835 Armtem Timer";
+    /* FIXME: Add device to DEVICE_CATEGORY_TIMER. */
+
+    dc->desc = "BCM2835 ARM Timer";
     dc->vmsd = &vmstate_bcm2835_armtimer;
 }
 
