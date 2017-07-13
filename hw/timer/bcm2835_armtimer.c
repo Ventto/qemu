@@ -95,11 +95,9 @@ static void bcm2835_armtimer_cb(void *opaque)
     BCM2835ARMTimerState *s = (BCM2835ARMTimerState *)opaque;
 
     s->raw_irq = 1;
-    qemu_irq_raise(s->irq);
 
-    bcm2835_armtimer_recalibrate(s, 1);
-
-    trace_bcm2835_armtimer_tick();
+    if (s->ctrl & CTRL_TIMER_ENABLE)
+        qemu_irq_raise(s->irq);
 }
 
 static uint64_t bcm2835_armtimer_read(void *opaque, hwaddr offset,
