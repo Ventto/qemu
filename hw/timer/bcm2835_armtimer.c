@@ -101,7 +101,7 @@ static void bcm2835_armtimer_cb(void *opaque)
 }
 
 static uint64_t bcm2835_armtimer_read(void *opaque, hwaddr offset,
-                                   unsigned size)
+                                      unsigned size)
 {
     BCM2835ARMTimerState *s = (BCM2835ARMTimerState *)opaque;
     uint32_t period;
@@ -136,7 +136,7 @@ static uint64_t bcm2835_armtimer_read(void *opaque, hwaddr offset,
 }
 
 static void bcm2835_armtimer_write(void *opaque, hwaddr offset,
-                                uint64_t value, unsigned size)
+                                   uint64_t value, unsigned size)
 {
     BCM2835ARMTimerState *s = (BCM2835ARMTimerState *)opaque;
     uint32_t div;
