@@ -181,11 +181,8 @@ static void bcm2835_peripherals_realize(DeviceState *dev, Error **errp)
     memory_region_add_subregion(&s->peri_mr, ARMCTRL_TIMER0_1_OFFSET,
                 sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->armtimer), 0));
     sysbus_connect_irq(SYS_BUS_DEVICE(&s->armtimer), 0,
-        qdev_get_gpio_in_named(DEVICE(&s->ic), BCM2835_IC_GPU_IRQ,
-                               INTERRUPT_ARM));
-    //sysbus_connect_irq(SYS_BUS_DEVICE(&s->armtimer), 0,
-    //    qdev_get_gpio_in_named(DEVICE(&s->ic), BCM2835_IC_ARM_IRQ,
-    //                           INTERRUPT_ARM_TIMER));
+        qdev_get_gpio_in_named(DEVICE(&s->ic), BCM2835_IC_ARM_IRQ,
+                               INTERRUPT_ARM_TIMER));
 
     /* UART0 */
     qdev_prop_set_chr(DEVICE(s->uart0), "chardev", serial_hds[0]);
