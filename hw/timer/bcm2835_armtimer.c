@@ -67,10 +67,8 @@
    The predivider reset value is 0x3E (or 62), knowing APB clock frequency,
    the FRN clock refers to a 2MHz frequency by default.
 */
-#define ARM_APB_FREQ                126UL /* MHz */
-#define ARM_TIMER_PREDIVIDER_RESET  125   /* MHz */
-
-#define USECS_PER_SEC               1000000
+#define ARM_APB_FREQ                126000000UL /* Hz */
+#define ARM_TIMER_PREDIVIDER_RESET  125         /* MHz */
 
 static const uint16_t ctrl_prescale [] = { 1, 16, 256, 1 };
 
@@ -106,7 +104,6 @@ static uint64_t bcm2835_armtimer_read(void *opaque, hwaddr offset,
                                       unsigned size)
 {
     BCM2835ARMTimerState *s = (BCM2835ARMTimerState *)opaque;
-    uint32_t period;
 
     switch (offset) {
     case ARM_TIMER_LOAD:
@@ -125,9 +122,7 @@ static uint64_t bcm2835_armtimer_read(void *opaque, hwaddr offset,
     case ARM_TIMER_PREDIVIDER:
         return s->prediv;
     case ARM_TIMER_COUNTER:
-        period = ARM_APB_FREQ / (((s->ctrl & CTRL_CNT_PRESCALE) >> 16) + 1);
-        period *= USECS_PER_SEC;
-        return qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) / period;
+        return qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) / s->prescaler;
 
     default:
         qemu_log_mask(LOG_GUEST_ERROR,
@@ -153,10 +148,14 @@ static void bcm2835_armtimer_write(void *opaque, hwaddr offset,
 
         s->ctrl = value;
 
+        s->prescaler = (ARM_APB_FREQ /
+                            (((s->ctrl & CTRL_CNT_PRESCALE) >> 16) + 1));
+
         bcm2835_armtimer_recalibrate(s, s->ctrl & CTRL_TIMER_ENABLE);
+
         div = ctrl_prescale[((s->ctrl & CTRL_TIMER_PRESCALE) >> 2)]
-                    * (s->prediv + 1);
-        ptimer_set_freq(s->timer, (ARM_APB_FREQ / div) * USECS_PER_SEC);
+                    * s->prediv;
+        ptimer_set_freq(s->timer, ARM_APB_FREQ / div);
 
         if (s->ctrl & CTRL_TIMER_ENABLE)
             ptimer_run(s->timer, CTRL_TIMER_WRAP_MODE);
@@ -175,11 +174,11 @@ static void bcm2835_armtimer_write(void *opaque, hwaddr offset,
         s->reload = value;
         break;
     case ARM_TIMER_PREDIVIDER:
-        s->prediv = value;
+        s->prediv = value + 1;
         if (s->ctrl & CTRL_TIMER_ENABLE) {
             ptimer_stop(s->timer);
             div = ctrl_prescale[((s->ctrl & CTRL_TIMER_PRESCALE) >> 2)]
-                    * (s->prediv + 1);
+                        * s->prediv;
             ptimer_set_freq(s->timer, ARM_APB_FREQ / div);
             ptimer_run(s->timer, CTRL_TIMER_WRAP_MODE);
         }

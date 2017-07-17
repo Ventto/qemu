@@ -29,6 +29,7 @@ typedef struct {
     uint32_t msk_irq;
     uint32_t reload;
     uint32_t prediv;
+    uint32_t prescaler;
 } BCM2835ARMTimerState;
 
 #endif
