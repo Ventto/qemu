@@ -96,8 +96,10 @@ static void bcm2835_armtimer_cb(void *opaque)
 
     s->raw_irq = 1;
 
-    if (s->ctrl & CTRL_TIMER_ENABLE)
+    if (s->ctrl & CTRL_TIMER_ENABLE) {
         qemu_irq_raise(s->irq);
+        trace_bcm2835_armtimer_irq();
+    }
 }
 
 static uint64_t bcm2835_armtimer_read(void *opaque, hwaddr offset,
@@ -162,6 +164,7 @@ static void bcm2835_armtimer_write(void *opaque, hwaddr offset,
     case ARM_TIMER_INTCLR:
         qemu_irq_lower(s->irq);
         s->raw_irq = 0;
+        trace_bcm2835_armtimer_ack();
         break;
     case ARM_TIMER_RELOAD:
         /* In Free-running mode the timer counter wraps around to 32 or 16-bit
