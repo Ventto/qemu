@@ -16,7 +16,7 @@
 #include "hw/timer/bcm2835_armtimer.h"
 #include "trace.h"
 
-#define ARM_TIMER_REG_SIZE      0x400
+#define ARM_TIMER_REG_SIZE      0x24
 
 /* Register offsets */
 #define ARM_TIMER_LOAD          0x00
