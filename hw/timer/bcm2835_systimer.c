@@ -167,7 +167,6 @@ static void bcm2835_systimer_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
 
-    set_bit(DEVICE_CATEGORY_TIMER, dc->categories);
     dc->desc = "BCM2835 System Timer";
     dc->vmsd = &vmstate_bcm2835_systimer;
 }
