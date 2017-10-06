@@ -170,20 +170,6 @@ static void bcm2835_peripherals_realize(DeviceState *dev, Error **errp)
                 sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->ic), 0));
     sysbus_pass_irq(SYS_BUS_DEVICE(s), SYS_BUS_DEVICE(&s->ic));
 
-
-    /* ARM Timer */
-    object_property_set_bool(OBJECT(&s->armtimer), true, "realized", &err);
-    if (err) {
-        error_propagate(errp, err);
-        return;
-    }
-
-    memory_region_add_subregion(&s->peri_mr, ARMCTRL_TIMER0_1_OFFSET,
-                sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->armtimer), 0));
-    sysbus_connect_irq(SYS_BUS_DEVICE(&s->armtimer), 0,
-        qdev_get_gpio_in_named(DEVICE(&s->ic), BCM2835_IC_ARM_IRQ,
-                               INTERRUPT_ARM_TIMER));
-
     /* UART0 */
     qdev_prop_set_chr(DEVICE(s->uart0), "chardev", serial_hds[0]);
     object_property_set_bool(OBJECT(s->uart0), true, "realized", &err);
@@ -272,6 +258,19 @@ static void bcm2835_peripherals_realize(DeviceState *dev, Error **errp)
 
     memory_region_add_subregion(&s->peri_mr, RNG_OFFSET,
                 sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->rng), 0));
+
+    /* ARM Timer */
+    object_property_set_bool(OBJECT(&s->armtimer), true, "realized", &err);
+    if (err) {
+        error_propagate(errp, err);
+        return;
+    }
+
+    memory_region_add_subregion(&s->peri_mr, ARMCTRL_TIMER0_1_OFFSET,
+                sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->armtimer), 0));
+    sysbus_connect_irq(SYS_BUS_DEVICE(&s->armtimer), 0,
+        qdev_get_gpio_in_named(DEVICE(&s->ic), BCM2835_IC_ARM_IRQ,
+                               INTERRUPT_ARM_TIMER));
 
     /* Extended Mass Media Controller */
     object_property_set_int(OBJECT(&s->sdhci), BCM2835_SDHC_CAPAREG, "capareg",
