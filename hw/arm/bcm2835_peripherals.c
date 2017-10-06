@@ -266,7 +266,6 @@ static void bcm2835_peripherals_realize(DeviceState *dev, Error **errp)
         return;
     }
 
-
     memory_region_add_subregion(&s->peri_mr, ST_OFFSET,
                 sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->systimer), 0));
     sysbus_connect_irq(SYS_BUS_DEVICE(&s->systimer), 0,
