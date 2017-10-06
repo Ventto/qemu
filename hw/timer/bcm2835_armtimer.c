@@ -1,7 +1,7 @@
 /*
  * BCM2835 ARM Timer
  *
- * Copyright (C) 2017 Thomas Venries <thomas.venries@gmail.com>
+ * Copyright (C) 2017 Thomas Venriès <thomas.venries@gmail.com>
  *
  * This work is licensed under the terms of the GNU GPL, version 2 or later.
  * See the COPYING file in the top-level directory.
@@ -250,8 +250,6 @@ static void bcm2835_armtimer_init(Object *obj)
 static void bcm2835_armtimer_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
-
-    /* FIXME: Add device to DEVICE_CATEGORY_TIMER. */
 
     dc->desc = "BCM2835 ARM Timer";
     dc->vmsd = &vmstate_bcm2835_armtimer;

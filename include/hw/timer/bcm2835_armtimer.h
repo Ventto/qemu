@@ -1,7 +1,7 @@
 /*
  * BCM2835 ARM Timer
  *
- * Copyright (C) 2017 Thomas Venries <thomas.venries@gmail.com>
+ * Copyright (C) 2017 Thomas Venriès <thomas.venries@gmail.com>
  *
  * This work is licensed under the terms of the GNU GPL, version 2 or later.
  * See the COPYING file in the top-level directory.
