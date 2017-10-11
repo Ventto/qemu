@@ -70,7 +70,7 @@
 #define ARM_APB_FREQ                126000000UL /* Hz */
 #define ARM_TIMER_PREDIVIDER_RESET  125         /* MHz */
 
-static const uint16_t ctrl_prescale [] = { 1, 16, 256, 1 };
+static const uint16_t ctrl_prescale[] = { 1, 16, 256, 1 };
 
 static void bcm2835_armtimer_recalibrate(BCM2835ARMTimerState *s, int reload)
 {
@@ -118,7 +118,7 @@ static uint64_t bcm2835_armtimer_read(void *opaque, hwaddr offset,
     case ARM_TIMER_RAW_IRQ:
         return s->raw_irq;
     case ARM_TIMER_MASK_IRQ:
-        return (s->raw_irq && (s->ctrl & CTRL_INT_ENABLE));
+        return s->raw_irq && (s->ctrl & CTRL_INT_ENABLE);
     case ARM_TIMER_PREDIVIDER:
         return s->prediv;
     case ARM_TIMER_COUNTER:
@@ -143,8 +143,9 @@ static void bcm2835_armtimer_write(void *opaque, hwaddr offset,
         bcm2835_armtimer_recalibrate(s, 2);
         break;
     case ARM_TIMER_CTRL:
-        if (s->ctrl & CTRL_TIMER_ENABLE)
+        if (s->ctrl & CTRL_TIMER_ENABLE) {
             ptimer_stop(s->timer);
+        }
 
         s->ctrl = value;
 
@@ -157,8 +158,9 @@ static void bcm2835_armtimer_write(void *opaque, hwaddr offset,
                     * s->prediv;
         ptimer_set_freq(s->timer, ARM_APB_FREQ / div);
 
-        if (s->ctrl & CTRL_TIMER_ENABLE)
+        if (s->ctrl & CTRL_TIMER_ENABLE) {
             ptimer_run(s->timer, CTRL_TIMER_WRAP_MODE);
+        }
         break;
     case ARM_TIMER_INTCLR:
         qemu_irq_lower(s->irq);
