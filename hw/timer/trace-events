@@ -62,5 +62,5 @@ cmsdk_apb_timer_write(uint64_t offset, uint64_t data, unsigned size) "CMSDK APB 
 cmsdk_apb_timer_reset(void) "CMSDK APB timer: reset"
 
 # hw/timer/bcm2535_armtimer.c
-bcm2835_armtimer_irq(void) "armtimer irq."
-bcm2835_armtimer_ack(void) "armtimer ack."
+bcm2835_armtimer_interrupt(void) "irq"
+bcm2835_armtimer_ack(void) "ack"

@@ -96,7 +96,7 @@ static void bcm2835_armtimer_cb(void *opaque)
 
     if (s->ctrl & CTRL_TIMER_ENABLE) {
         qemu_irq_raise(s->irq);
-        trace_bcm2835_armtimer_irq();
+        trace_bcm2835_armtimer_interrupt();
     }
 }
 
